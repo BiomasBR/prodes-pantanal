@@ -72,8 +72,8 @@ plots_path    <- "data/plots/"
 config_dir    <- ".."
 
 # Plots organized by var
-plot_dir <- file.path(plots_path, var)
-dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE)
+plots_dir <- file.path(plots_path, var)
+dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Define and Load Data Cubes
@@ -273,11 +273,11 @@ save_sits_patterns_plot(
   samples          = samples,
   start_date       = unique(samples$start_date),
   end_date         = unique(samples$end_date),
-  plots_path       = plots_dir,
+  plots_dir        = plots_dir,
   tiles            = tiles,
   var              = var,
-  bands            = c('B12','B11','B04'), # NULL to plot and save all bands patterns
-  labels            = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
+  bands            = c('B11','EVI','NDVI'), # NULL to plot and save all bands patterns
+  #labels            = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
   vline_dates      = "08-01",   # vertical doted line on August 1st of each year
   legend_text_size = 10, 
   class_text_size  = 12,

@@ -133,6 +133,48 @@ plot(rfor_validate, type = "confusion_matrix")
 # Step 2.3.2 -- Plot the metrics by class
 plot(rfor_validate, type = "metrics")
 
+# Step 2.4 -- Save confusion matrix plot
+g_cm <- plot(rfor_validate, type = "confusion_matrix")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-confusion-matrix_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_cm,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
+
+# Step 2.4.1 -- Save metrics plot
+g_metrics <- plot(rfor_validate, type = "metrics")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-metrics_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_metrics,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
+
 # ============================================================
 # 3. Training and saving model
 # ============================================================
@@ -209,7 +251,7 @@ save_rf_model_plot <- function(
 # Step 4.2 -- Run the function to plot and save the most important variables of the model
 save_rf_model_plot(
   rf_model   = rf_model,
-  plots_path = plots_dir,
+  plots_dir  = plots_dir,
   tiles      = tiles,
   no.years   = no.years,
   start_date = start_date,
@@ -218,7 +260,7 @@ save_rf_model_plot(
   width      = 1600,   # width in pixels
   height     = 1000,   # height in pixels
   res        = 200,    # DPI
-  scale = 0.5          # increases all elements proportionally  
+  scale      = 1          # increases all elements proportionally  
 )
 
 # Step 4.3 --  Define the function to plot and save Out of Box error by the number of trees
@@ -296,7 +338,7 @@ save_rf_oob_plot <- function(
 # Step 4.4 --  Define the function to plot and save Out of Box error by the number of trees
 save_rf_oob_plot(
   rf_model   = rf_model,
-  plots_path = plots_dir,
+  plots_dir  = plots_dir,
   tiles      = tiles,
   no.years   = no.years,
   start_date = start_date,
