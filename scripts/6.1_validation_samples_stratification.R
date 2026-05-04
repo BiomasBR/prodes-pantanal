@@ -17,7 +17,7 @@ library(purrr)
 model_name      <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-15_12h01m.rds"
 
 # Date and time of the start of processing
-date_process    <- format(Sys.Date(), "%Y-%m-%d_")
+date_process    <- format(Sys.Date(), "%Y-%m-%d")
 time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
 process_version <- paste0(date_process, time_process)
 
@@ -190,7 +190,6 @@ labels <- c(
 names(labels) <- 1:length(labels)
 
 # Step 2.2 -- Load the original cube with classified raster file
-cube_list <- purrr::map(cube_dirs, function(dir) {
 cube <- sits_cube(
   source = "BDC",
   collection = "SENTINEL-2-16D",
@@ -200,21 +199,6 @@ cube <- sits_cube(
   version = version,
   parse_info = c("satellite", "sensor", "tile", "start_date", "end_date", 
                  "band", "version"))
-})
-
-# Bind all the individual cubes into one master cube
-cube <- bind_rows(cube_list)
-
-#if you want to mosaic different tiles
-if(nrow(cube) > 1){
-  cube <-sits_mosaic(
-    cube,
-    multicores = 28,
-    output_dir = paste0(class_dir, "mosaic"),
-    version = paste0(version,
-                     "mosaic")
-  )
-}
 
 # ============================================================
 # 3. Full Map Stratified Random Sampling
@@ -281,17 +265,6 @@ prodes_mask <- sits_cube(source = "BDC",
                          bands = "class",
                          version = "contra-mask-geral-amz",
                          labels = counter_mask)
-
-# If you want to mosaic different tiles
-if(nrow(prodes_mask) > 1){
-  prodes_mask <-sits_mosaic(
-    prodes_mask,
-    multicores = 28,
-    output_dir = paste0(class_dir, "mosaic/mask"),
-    version = paste0(version,
-                     "-mosaic")
-  )
-}
 
 # 4.2 -- Detect tiles and period automatically
 dir_path <- file.path(
