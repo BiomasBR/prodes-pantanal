@@ -260,7 +260,7 @@ save_rf_model_plot(
   width      = 1600,   # width in pixels
   height     = 1000,   # height in pixels
   res        = 200,    # DPI
-  scale      = 1          # increases all elements proportionally  
+  scale      = 1       # increases all elements proportionally  
 )
 
 # Step 4.3 --  Define the function to plot and save Out of Box error by the number of trees
@@ -347,5 +347,5 @@ save_rf_oob_plot(
   width      = 1600,   # width in pixels
   height     = 1000,   # height in pixels
   res        = 200,    # DPI
-  scale = 1.5          # increases all elements proportionally  
+  scale      = 1.5     # increases all elements proportionally  
 )
