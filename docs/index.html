@@ -458,10 +458,6 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
     <div class="page-eyebrow">BiomasBR · PRODES-AMZ Project</div>
     <h1 class="page-title">SITS-AMZ Pipeline</h1>
     <p class="page-subtitle">End-to-end deforestation and degradation mapping for the Brazilian Legal Amazon</p>
-    <div class="page-meta">
-      <span class="meta-pill green">15 Scripts</span>
-      <span class="meta-pill green">SITS ≥ 1.6.0</span>
-    </div>
   </div>
 
   <p>
@@ -492,17 +488,17 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
       <tr><td class="mono">02</td><td><code>2_1_segmentation.R</code></td><td>SNIC-based segmentation</td></tr>
       <tr><td class="mono">03</td><td><code>3_1_time_series_sampling.R</code></td><td>Extract training time series</td></tr>
       <tr><td class="mono">04</td><td><code>3_2_samples_quality_assessment.R</code></td><td>SOM quality assessment</td></tr>
-      <tr><td class="mono">05</td><td><code>4_1_model_training_random_forest.R</code></td><td>Random Forest training</td></tr>
+      <tr><td class="mono">05</td><td><code>4_1_model_training_random-forest.R</code></td><td>Random Forest training</td></tr>
       <tr><td class="mono">06</td><td><code>4_2_model_training_xgboost.R</code></td><td>XGBoost training</td></tr>
       <tr><td class="mono">07</td><td><code>4_3_model_training_tempcnn.R</code></td><td>TempCNN training</td></tr>    
       <tr><td class="mono">08</td><td><code>4_4_model_training_ltae.R</code></td><td>LTAE training</td></tr>
       <tr><td class="mono">09</td><td><code>5_classification.R</code></td><td>Classify vector data cube</td></tr>
       <tr><td class="mono">10</td><td><code>6_1_validation_samples_stratification.R</code></td><td>Stratified sample design for Forest</td></tr>
-      <tr><td class="mono">11</td><td><code>6_2_validation_samples_stratification_nf.R</code></td><td>Stratified sample design for Non-Forest</td></tr>
+      <!--<tr><td class="mono">11</td><td><code>6_2_validation_samples_stratification_non-forest.R</code></td><td>Stratified sample design for Non-Forest</td></tr>-->
       <tr><td class="mono">12</td><td><code>7_1_validation_accuracy_measurement.R</code></td><td>Validation accuracy measurement for Forest</td></tr>
-      <tr><td class="mono">13</td><td><code>7_2_validation_accuracy_measurement_nf.R</code></td><td>Validation accuracy measurement for Non-Forest</td></tr>
+      <!--<tr><td class="mono">13</td><td><code>7_2_validation_accuracy_measurement_non-forest.R</code></td><td>Validation accuracy measurement for Non-Forest</td></tr>-->
       <tr><td class="mono">14</td><td><code>8_1_post_processing.R</code></td><td>Post-processing for Forest</td></tr>
-      <tr><td class="mono">15</td><td><code>8_2_post_processing_nf.R</code></td><td>Post-processing for Non-Forest</td></tr>
+      <!--<tr><td class="mono">15</td><td><code>8_2_post_processing_non-forest.R</code></td><td>Post-processing for Non-Forest</td></tr> -->
     </tbody>
   </table></div>
 
@@ -546,7 +542,7 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
   and allows enforcing the minimum mapping unit before classification by controlling segment size.</p>
 
   <h2 id="bdc-source"><span class="sec-num">1.4</span>Brazil Data Cube as Data Source</h2>
-  <p>All imagery is sourced from the <a href="https://data.inpe.br/bdc/" target="_blank">Brazil Data Cube (BDC)</a> collection <code>SENTINEL-2-16D</code>, 
+  <p>All imagery is sourced from the BDC collection <code>SENTINEL-2-16D</code>, 
   which provides analysis-ready 16-day best-pixel composites at 10 m resolution. The BDC applies cloud masking and compositing, 
   making the cubes directly suitable for time series analysis without additional preprocessing. 
   Bands used: B02, B03, B04, B05, B06, B07, B08, B8A, B11, B12, NDVI, NBR, EVI, CLOUD.</p>
@@ -575,14 +571,13 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
 install.packages(<span class="s">&quot;sits&quot;</span>)  <span class="c"># requires sits &gt;= 1.5.1</span>
 
 <span class="c"># Or install the development version from GitHub</span>
-<span class="c"># devtools::install_github(&quot;e-sensing/sits&quot;, dependencies = TRUE)</span>
+devtools::install_github(&quot;e-sensing/sits&quot;, dependencies = TRUE)</span>
 
 <span class="c"># Install all supporting packages used in this pipeline</span>
 install.packages(<span class="kc">c</span>(
   <span class="s">&quot;sf&quot;</span>, <span class="s">&quot;terra&quot;</span>, <span class="s">&quot;dplyr&quot;</span>, <span class="s">&quot;tibble&quot;</span>, <span class="s">&quot;ggplot2&quot;</span>, <span class="s">&quot;lubridate&quot;</span>,
   <span class="s">&quot;purrr&quot;</span>, <span class="s">&quot;stringr&quot;</span>, <span class="s">&quot;fs&quot;</span>, <span class="s">&quot;RColorBrewer&quot;</span>, <span class="s">&quot;gdalUtilities&quot;</span>,
-  <span class="s">&quot;pals&quot;</span>, <span class="s">&quot;cli&quot;</span>, <span class="s">&quot;units&quot;</span>, <span class="s">&quot;smoothr&quot;</span>, <span class="s">&quot;torch&quot;</span>, <span class="s">&quot;luz&quot;</span>
-))</pre>
+  <span class="s">&quot;pals&quot;</span>, <span class="s">&quot;cli&quot;</span>, <span class="s">&quot;units&quot;</span>, <span class="s">&quot;smoothr&quot;</span>, <span class="s">&quot;torch&quot;</span>, <span class="s">&quot;luz&quot;</span>))</pre>
   </div>
 
   <div class="callout important">

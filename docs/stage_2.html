@@ -454,32 +454,65 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
     <p class="page-subtitle">Partition the cube into spatially homogeneous objects</p>
   </div>
 
-  <p><code>sits_segment()</code> applies <strong>SNIC (Simple Non-Iterative Clustering)</strong> to the merged cube (LSMM fractions plus Sentinel-2 bands). 
-  Three parameters control the output: <code>spacing</code> (target segment radius in pixels), <code>compactness</code> (trade-off between spectral and spatial homogeneity), 
-  and <code>padding</code> (border pixel handling). The version string automatically encodes all parameters, ensuring reproducibility.</p>
+ <p>
+  Object-Based Image Analysis (OBIA) is an approach to remote sensing image analysis that partitions an image into closed segments, which are subsequently classified and analyzed. 
+  The process begins by grouping pixels according to their similarity, based on a distance metric that considers both spatial and spectral components. 
+  Simões et al. <sup><a href="#ref1" id="cite1">[1]</a></sup> constructed a multitemporal attribute space in which each combination of time and band is treated as an independent dimension. 
+  A data cube with 10 bands and 24 time steps results in a 240-dimensional spectral space, complemented by a 2-dimensional Euclidean space representing spatial coordinates.
+</p>
 
-  <div class="io-grid">
-    <div class="io-box"><div class="io-label">Input</div><div class="io-val">Merged cube<br>All bands and indices, plus SOIL, VEG, and WATER</div></div>
-    <div class="io-box"><div class="io-label">Output</div><div class="io-val">Segmented vector cube → <code>data/segments/</code><br>Version-encoded filenames (.gpkg)</div></div>
-  </div>
+<p>
+ The spatial component measures how far a pixel is from the center of a superpixel in terms of its x and y coordinates, while the spectral component evaluates how different the pixel’s spectral values are from the average spectral signature of the superpixel across all temporal instances. 
+ As a result, the segmentation process produces superpixels corresponding to coherent object parts in the Sentinel-2 image.
+</p>
+
+<p>
+  Building on this concept, the first step of the OBIA procedure in <code>sits</code> is to select a data cube for segmentation, along with the function that will perform this task. 
+  The package provides a generic <code>sits_segment</code> function, enabling users to choose among different segmentation algorithms. Currently, two options are available: 
+  <code>sits_snic</code>, which implements the Simple Non-Iterative Clustering (SNIC) algorithm, and <code>sits_slic</code>, which implements an extended version of the Simple Linear Iterative Clustering (SLIC) algorithm.
+</p>
+
+<p>
+  In this work, we adopt the SNIC algorithm due to its efficiency and its improvements over SLIC. 
+  A comprehensive description of the method can be found in Achanta &amp; Süsstrunk <sup><a href="#ref2" id="cite2">[2]</a></sup>, where the algorithm is formally introduced and discussed.
+  Three parameters control the output: <code>spacing</code> (target segment radius in pixels), <code>compactness</code> (trade-off between spectral and spatial homogeneity), 
+  and <code>padding</code> (border pixel handling).
+  </p>
+
+<p>
+<figcaption style="text-align: center; margin-top: 6px;">
+ <strong>Segmentation Using Linear Spectral Mixture Model and Sentinel-2 Data.</strong> 
+</figcaption>
+</p>
 
 <pre><code id="code-step2" class="language-r"></code></pre>
 <script>
-const url = "https://raw.githubusercontent.com/migualex/sits-prodes/refs/heads/main/scripts/2.1_segmentation.R";
+const url = "https://raw.githubusercontent.com/migualex/sits-prodes/refs/heads/main/scripts/2_segmentation.R";
 fetch(url)
   .then(res => res.text())
   .then(data => {
     const lines = data.split("\n");
-    const snippet = lines.slice(16, 78).join("\n");
+    const snippet = lines.slice(21, 86).join("\n");
     const el = document.getElementById("code-step2");
     el.textContent = snippet; // ← era "data", corrigido para "snippet"
     hljs.highlightElement(el);
   });
 </script>
 
-<figure id="fig-svd" style="text-align: center;">
+<p>
+</p>
+
+<p>
+The result of the segmentation is shown below (Figure <a href="#fig-seg">2.1</a>) and demonstrates adherence of the segmentation to the one-month cube.
+Merging the cube was necessary because using only the fractions could lead to the omission of data visible in the optical imagery, such as deforestation with vegetation.
+
+In areas affected by clouds or artifacts gaps may appear in the segmentation. To address this, the script implements a condition that checks whether the segmentation can be completed within the July period.
+If not, the temporal window is progressively expanded backward (from June to July, May to July, and so on).
+</p>
+
+<figure id="fig-seg" style="text-align: center;">
   <figcaption style="margin-bottom: 6px;">
-    <strong>Figure 1.1:</strong>
+    <strong>Figure 2.1:</strong>
     Sentinel-2 image segmentation.
   </figcaption>
   <img src="figures/mlme_s2_seg.png" style="max-width:550px;">
@@ -493,8 +526,11 @@ fetch(url)
     <h1 class="page-title">References</h1>
   </div>
   <div style="font-family:var(--sans);font-size:.9rem;line-height:1.9">
-    <p><strong>Small, C., &amp; Sousa, D.</strong> (2022). The Sentinel-2 MSI Spectral Mixing Space. <em>Remote Sensing, 14 </em>(22), 5748. <a href="https://doi.org/10.3390/rs14225748" target="_blank">doi:10.3390/rs14225748</a></p></div>
-</section>
+    <div id="ref1"><a href="#cite1">[1] </a>Simões, R., Câmara, G., Queiroz, G., Souza, F., Andrade, P., Santos, L., Carvalho, A., &amp; Ferreira, K.</strong> (2021).
+      Satellite Image Time Series Analysis for Big Earth Observation Data.<em> Remote Sensing, 13</em> (13), 2428.</div>
+    <div id="ref2"><a href="#cite2">[2] </a>Achanta, R., &amp; Süsstrunk, S. (2017). Superpixels and Polygons Using Simple Non-iterative Clustering. 
+      <em>In 2017 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 4895–4904. https://doi.org/10.1109/CVPR.2017.520.</div>
+  </section>
 
 <div class="page-nav">
   <a class="pnav-btn" href="stage_1.html">

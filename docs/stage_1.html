@@ -485,7 +485,7 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
 
   <p>
     In practice, the linear spectral mixture model decomposes each pixel's reflectance spectrum into the fractional contributions of a small number
-    of spectrally pure components. The function <code>sits_mixture_model()</code> implements this approach by estimating, for every pixel, the proportions
+    of spectrally pure components. The function <code>sits_mixture_model</code> implements this approach by estimating, for every pixel, the proportions
     of three endmembers — <strong>Soil, Vegetation, and Dark (SVD)</strong> — using Non-Negative Least Squares (NNLS) optimization
     <sup><a href="#ref5" id="cite5">[5]</a></sup>. The resulting fraction bands enrich the feature space available for segmentation and classification,
     improving the separability of mixed and transitional land cover types that are especially prevalent across the Amazon.
@@ -522,11 +522,6 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
     <strong>green vegetation</strong> shift strongly toward the y-axis, owing to the characteristically high NIR reflectance and low red reflectance
     produced by chlorophyll absorption. Each of these regions corresponds directly to one of the three fraction images output by the model.</p>
 
-  <p>
-  We used the inner endmembers (Si and Vi) recommended by the authors, which are derived from the interior apexes of the mixing space rather than from extreme outlier pixels.
-  This choice produces more physically plausible fraction estimates and avoids the dynamic range compression that occurs when high-albedo sand spectra are used as the Substrate endmember.
-  </p>
-
 <figure id="fig-svd" style="text-align: center;">
   <figcaption style="margin-bottom: 6px;">
     <strong>Figure 1.1:</strong>
@@ -538,29 +533,34 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
   </figcaption>
 </figure>
 
-<div class="io-grid">
-    <div class="io-box"><div class="io-label">Input</div><div class="io-val"><code>SENTINEL-2-16D</code> cube<br>Tiles: 012014, 012015, 013014, 013015<br>Period: 2024-08-01 → 2025-07-31</div></div>
-    <div class="io-box"><div class="io-label">Output</div><div class="io-val">LSMM cube → <code>data/raw/mixture_model/</code><br>Fraction bands: <code>SOIL</code>, <code>VEG</code>, <code>DARK</code></div></div>
-  </div>
+<p>
+  We used the inner endmembers (Si and Vi) recommended by the authors, which are derived from the interior apexes of the mixing space rather than from extreme outlier pixels.
+  This choice produces more physically plausible fraction estimates and avoids the dynamic range compression that occurs when sand spectra are used as the Substrate endmember.
+  All the parameters are included in the script below.
+</p>
+
+<p> 
+<figcaption style="text-align: center; margin-top: 6px;">
+ <strong>Linear Spectral Mixture Model (LSMM) for Feature Extraction.</strong> 
+</figcaption>
+</p>
 
 <pre><code id="code-step1" class="language-r"></code></pre>
 <script>
-const url = "https://raw.githubusercontent.com/migualex/sits-prodes/main/scripts/1_mixture_model.R";
+const url = "https://raw.githubusercontent.com/migualex/sits-prodes/refs/heads/main/scripts/1_mixture_model.R";
 fetch(url)
   .then(res => res.text())
   .then(data => {
     const lines = data.split("\n");
-    const snippet = lines.slice(11, 51).join("\n"); 
+    const snippet = lines.slice(11, 49).join("\n");
     const el = document.getElementById("code-step1");
-    el.textContent = snippet;
+    el.textContent = snippet; // ← era "data", corrigido para "snippet"
     hljs.highlightElement(el);
   });
 </script>
 
-  <div class="callout tip">
-    <div class="callout-title">💡 Endmember values</div>
-    <p>Band values are in BDC native scale (0–10.000). Values from Small &amp; Sousa (2022) were validated for the Sentinel-2 MSI spectral mixing space and are widely used for tropical land cover monitoring.</p>
-  </div>
+<p>
+</p>
 
 <p>
   The <strong>Soil fraction</strong> represents the proportion of each pixel occupied by exposed soil, sand, rock outcrops, or impervious surfaces such as roads and urban infrastructure (Figure <a href="#fig-soil">1.2</a>). 
@@ -658,7 +658,6 @@ fetch(url)
 <!-- ── TOC ── -->
 <aside class="toc">
   <div class="toc-label">On this page</div>
-  <a class="toc-link" href="#step1"></a>
   <a class="toc-link" href="#references_s1">References</a>
 </aside>
 </div><!-- .layout -->
