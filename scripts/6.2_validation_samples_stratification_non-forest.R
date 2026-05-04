@@ -17,7 +17,7 @@ library(purrr)
 model_name      <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
 
 # Date and time of the start of processing
-date_process    <- format(Sys.Date(), "%Y-%m-%d_")
+date_process    <- format(Sys.Date(), "%Y-%m-%d")
 time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
 process_version <- paste0(date_process, time_process)
 
@@ -190,8 +190,7 @@ labels <- c(
 names(labels) <- 1:length(labels)
 
 # Step 2.2 -- Load the original cube with classified raster file
-cube_list <- purrr::map(cube_dirs, function(dir) {
-  cube <- sits_cube(
+cube <- sits_cube(
     source = "BDC",
     collection = "SENTINEL-2-16D",
     bands = "class",
@@ -200,21 +199,6 @@ cube_list <- purrr::map(cube_dirs, function(dir) {
     version = version,
     parse_info = c("satellite", "sensor", "tile", "start_date", "end_date", 
                    "band", "version"))
-})
-
-# Bind all the individual cubes into one master cube
-cube <- bind_rows(cube_list)
-
-#if you want to mosaic different tiles
-if(nrow(cube) > 1){
-  cube <-sits_mosaic(
-    cube,
-    multicores = 28,
-    output_dir = paste0(class_dir, "mosaic"),
-    version = paste0(version,
-                     "mosaic")
-  )
-}
 
 # ============================================================
 # 3. Full Map Stratified Random Sampling
@@ -372,7 +356,7 @@ samples_sf <- sits_stratified_sampling(
 samples_sf%>% group_by(label) %>% summarise(num = n())
 
 # 4.7 -- Define File Path
-samples_sf_file_path <- file.path(samples_dir, paste0("validation-samples-prodes_", cube_reclass$tile,
+samples_sf_file_path <- file.path(samples_dir, paste0("validation-samples_prodes_", cube_reclass$tile,
                                                       "_", version, "_", date_process, ".gpkg"))
 
 # 4.8 -- Save samples_sf object as GPKG file
