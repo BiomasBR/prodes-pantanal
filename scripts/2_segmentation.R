@@ -1,5 +1,5 @@
 # ============================================================
-# Segmentation Using Linear Spectral Mixture Model and Sentinel-2 Data
+# Segmentation Using Simple Non-Iterative Clustering (SNIC) algorithm
 # ============================================================
 
 # Load required libraries
@@ -11,6 +11,12 @@ library(sits)
 start_date <- '2025-07-01'
 end_date   <- '2025-07-31'
 tiles      <- '014002'
+
+# Parameters for SNIC segmentation
+grid_seeding <- "rectangular"
+spacing      <- 10
+compactness  <- 0.3
+padding      <- 0
 
 # File and folder paths
 mixture_path  <- "data/raw/mixture_model"
@@ -54,13 +60,7 @@ mm_cube_fraction <- sits_merge(mm_cube, cube)
 # 2. Image Segmentation
 # ============================================================
 
-# Step 2.1 -- Define parameters for SNIC segmentation
-grid_seeding <- "rectangular"
-spacing      <- 10
-compactness  <- 0.3
-padding      <- 0
-
-# Step 2.2 -- Define the version of your segmentation file
+# Step 2.1 -- Define the version of your segmentation file
 version <- paste0(
   "LSMM-SNIC-spac", spacing,
   "-comp", gsub("[.]", "", as.character(compactness)),
@@ -69,7 +69,7 @@ version <- paste0(
   "_", date_process
 )
 
-# Step 2.3 -- Segment sits cube using SNIC algorithm
+# Step 2.2 -- Segment sits cube using SNIC algorithm
 mm_cube_segments <- sits_segment(
   cube      = mm_cube_fraction,
   seg_fn    = sits_snic(
