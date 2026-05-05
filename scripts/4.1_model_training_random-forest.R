@@ -1,17 +1,18 @@
 # ============================================================
-# Train a Random Forest machine learning model
+# Train a Random Forest model
 # ============================================================
 
 # Load required libraries
 library(sits)
 library(ggplot2)
+library(stringr)
 library(randomForestExplainer, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4.4")
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-22_10h46m.rds"
-tiles             <- c("012014","012015","013014","013015")
+time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-02-24_20h01m.rds"
 
-# Extract the date of the string separated by "_"
+# Extract the tiles and date of the string separated by "_"
+tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
 start_date <- stringr::str_split_i(time_series_name, "_", 4)
 end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 
