@@ -1,5 +1,5 @@
 # ============================================================
-# Segmentation Using Simple Non-Iterative Clustering (SNIC) algorithm
+# Segmentation using Simple Non-Iterative Clustering (SNIC) algorithm
 # ============================================================
 
 # Load required libraries
