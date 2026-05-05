@@ -26,7 +26,7 @@ cube <- sits_cube(
 # 2. Create Fraction Image Features from the Mixture Model Cube
 # ============================================================
 
-# Step 2.1 -- Define endmember values
+# Step 2.1 -- Define endmember values (class names cannot contain numbers)
 endmembers <- tibble::tribble(
   ~class,    ~B02, ~B03, ~B04, ~B05, ~B06, ~B07, ~B08, ~B8A, ~B11, ~B12,
   "soil",    1799, 2154, 3028, 3303, 3472, 3656, 3566, 3686, 5097, 4736,
