@@ -1,5 +1,5 @@
 # ============================================================
-# Train a Temporal Convolution Neural Network deep learning model
+# Train a Temporal Convolution Neural Network
 # ============================================================
 
 # Load required libraries
@@ -7,12 +7,15 @@ library(sits)
 library(ggplot2)
 library(torch)
 library(luz)
+library(stringr)
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-22_10h46m.rds"
-start_date        <- "2024-08-01"
-end_date          <- "2025-07-31"
-tiles             <- c("012014","012015","013014","013015")
+time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-02-24_20h01m.rds"
+
+# Extract the tiles and date of the string separated by "_"
+tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
+start_date <- stringr::str_split_i(time_series_name, "_", 4)
+end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -77,6 +80,10 @@ config_dir        <- ".."
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
 
+# Plots organized by var
+plots_dir <- file.path(plots_path, var)
+dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+
 # ============================================================
 # 1. Define and Load Data Cubes
 # ============================================================
@@ -118,13 +125,57 @@ rfor_validate <- sits_kfold_validate(
   progress = TRUE) # adapt to your computer CPU core availability
 sits_kfold_validate_end <- Sys.time()
 sits_kfold_validate_time <- as.numeric(sits_kfold_validate_end - sits_kfold_validate_start, units = "secs")
-sprintf("SITS kfold_validate process duration (HH:MM): %02d:%02d", as.integer(sits_kfold_validate_time / 3600), as.integer((sits_kfold_validate_time %% 3600) / 60))
+sprintf("SITS kfold_validate process duration (HH:MM): %02d:%02d", 
+        as.integer(sits_kfold_validate_time / 3600), 
+        as.integer((sits_kfold_validate_time %% 3600) / 60))
 
 # Step 2.3.1 -- Plot the confusion matrix
 plot(rfor_validate, type = "confusion_matrix")
 
 # Step 2.3.2 -- Plot the metrics by class
 plot(rfor_validate, type = "metrics")
+
+# Step 2.4 -- Save confusion matrix plot
+g_cm <- plot(rfor_validate, type = "confusion_matrix")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-confusion-matrix_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_cm,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
+
+# Step 2.4.1 -- Save metrics plot
+g_metrics <- plot(rfor_validate, type = "metrics")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-metrics_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_metrics,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
 
 # ============================================================
 # 3. Training and saving model
@@ -167,7 +218,6 @@ tempcnn_model <- sits_train(
     # Early stopping configuration
     patience = 20,                           # epochs to wait without improvement
     min_delta = 0.01,                        # minimum improvement threshold
-    
     verbose = FALSE                          # disable training logs
   )
 )
@@ -175,47 +225,7 @@ tempcnn_model <- sits_train(
 # Step 3.2.1 -- Plot model diagnostics (e.g., training history or feature relevance)
 plot(tempcnn_model)
 
-# Step 3.3 -- Export trained model to a more accessible structure
-tempcnn_model2 <- sits_model_export(tempcnn_model)
-
-# Step 3.3.1 -- Open PNG device to save diagnostic plots
-png(
-  filename = file.path(
-    tile_period_dir,
-    paste0(
-      process_version, "_", tiles_train, "_",
-      no.years, var, "_oob_ntree_mde.png"
-    )
-  ),
-  width = 3529,
-  height = 1578,
-  res = 350
-)
-
-# Step 3.3.2 -- Plot Out-Of-Bag (OOB) error over number of trees
-matplot(
-  tempcnn_model2$err.rate, 
-  type = "l", lty = 1, lwd = 2,
-  col = my_colors,           
-  main = "Out-of-Bag Error vs Number of Trees",
-  xlab = "Number of Trees (ntree)", 
-  ylab = "Out-of-Bag Error"
-)
-
-# Step 3.3.3 -- Add legend to the plot
-legend(
-  "topright", 
-  legend = names(my_colors), 
-  col = my_colors, 
-  lty = 1,      
-  cex = 1,    
-  bty = "n"
-)
-
-# Close PNG device and save file
-dev.off()
-
-# Step 3.4 -- Save trained model to disk (RDS format)
+# Step 3.3 -- Save trained model to disk (RDS format)
 saveRDS(
   tempcnn_model,
   paste0(
