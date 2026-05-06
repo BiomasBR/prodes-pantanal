@@ -479,22 +479,26 @@ footer{background:var(--sidebar-bg);border-top:1px solid var(--border);padding:1
   and <code>padding</code> (border pixel handling).
   </p>
 
-<p>
+<!--<p>
 <figcaption style="text-align: center; margin-top: 6px;">
- <strong>Segmentation Using Linear Spectral Mixture Model and Sentinel-2 Data.</strong> 
+ <strong>Segmentation using Simple Non-Iterative Clustering (SNIC) algorithm.</strong> 
 </figcaption>
-</p>
+</p>-->
 
 <pre><code id="code-step2" class="language-r"></code></pre>
+
 <script>
 const url = "https://raw.githubusercontent.com/migualex/sits-prodes/refs/heads/main/scripts/2_segmentation.R";
+
 fetch(url)
   .then(res => res.text())
   .then(data => {
     const lines = data.split("\n");
-    const snippet = lines.slice(21, 86).join("\n");
+    const part1 = lines.slice(14, 19).join("\n"); // linhas 11–15 (índice começa em 0)
+    const part2 = lines.slice(70, 86).join("\n");  // linhas 71–86
+    const snippet = part1 + "\n" + part2;
     const el = document.getElementById("code-step2");
-    el.textContent = snippet; // ← era "data", corrigido para "snippet"
+    el.textContent = snippet;
     hljs.highlightElement(el);
   });
 </script>
