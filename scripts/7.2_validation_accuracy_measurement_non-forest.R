@@ -12,7 +12,7 @@ library(ggplot2)
 library(stringr)
 
 # Define the parameters: These are user-defined variables
-tiles      = '012014'
+tiles      = '000000'
 model_name <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
 
 # Extract the date of the string separated by "_"
@@ -170,14 +170,10 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
 # ============================================================
 
 # Step 1.1 -- Get labels associated to the trained model data set (Enumerate them in the order they appear according to "sits_labels(model)")
-cube_dirs <- list.dirs(class_dir, recursive = TRUE)
+pattern <- paste0(".*", tiles, ".*", version, ".*\\.tif$")
 
-cube_dirs <- cube_dirs[
-  sapply(cube_dirs, function(x) {
-    files <- list.files(x, pattern = "\\.tif$")
-    any(grepl(version, files))
-  })
-]
+cube_dirs <- list.dirs(class_dir, recursive = TRUE) |> 
+  purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0)
 
 # Step 1.2 -- Retrieve local cube of Full Map classified
 cube <- sits_cube(
@@ -207,7 +203,7 @@ cube <- sits_cube(
                  "band", "version"))
 
 # Step 1.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep("*all-classes*",
+samples_validation <- st_read(grep(".*_all-classes_*.",
                                    samples_validation_list, value = TRUE))
 
 # Step 1.3 -- Calculate accuracy
@@ -253,7 +249,7 @@ class_cube <- sits_cube(
                  "band", "version"))
 
 # Step 2.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep("*prodes*",
+samples_validation <- st_read(grep(".*_prodes_*.",
                                    samples_validation_list, value = TRUE))
 
 # Step 2.3 -- Calculate accuracy
