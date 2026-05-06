@@ -1,16 +1,19 @@
 # ============================================================
-# Train a XGBoost machine learning model
+# Train a XGBoost model
 # ============================================================
 
 # Load required libraries
 library(sits)
 library(ggplot2)
+library(stringr)
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-22_10h46m.rds"
-start_date        <- "2024-08-01"
-end_date          <- "2025-07-31"
-tiles             <- c("012014","012015","013014","013015")
+time_series_name  <- "TS-tiles_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-02-24_20h01m.rds"
+
+# Extract the tiles and date of the string separated by "_"
+tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
+start_date <- stringr::str_split_i(time_series_name, "_", 4)
+end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -75,6 +78,10 @@ config_dir        <- ".."
 # Identifier to distinguish this model run from previous versions
 var <- stringr::str_split_i(time_series_name, "_", 6)
 
+# Plots organized by var
+plots_dir <- file.path(plots_path, var)
+dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+
 # ============================================================
 # 1. Define and Load Data Cubes
 # ============================================================
@@ -95,7 +102,7 @@ tiles_train <- paste(sort(tiles), collapse = "-")
 no.cubes <- paste0(length(cube$tile), "t")
 
 # ============================================================
-# 2. Cross-validation of training data
+# 2. Import training data
 # ============================================================
 
 # Step 2.1 -- Reading training samples
@@ -122,9 +129,9 @@ tunned_model <- sits_tuning(
   validation_split = 0.3,
   ml_method = sits_xgboost(),
   params = sits_tuning_hparams(
-    learning_rate = loguniform(0.01, 0.3),        # learning rate (log-scale search)
-    min_split_loss = uniform(1,10),                # gamma: minimum loss reduction to split
-    max_depth = choice(6,7,8,9,10,11,12,13,14,15), # maximum tree depth
+    learning_rate = loguniform(0.01, 0.3),            # learning rate (log-scale search)
+    min_split_loss = uniform(1,10),                   # gamma: minimum loss reduction to split
+    max_depth = choice(6,7,8,9,10,11,12,13,14,15),    # maximum tree depth
     min_child_weight = choice(5, 10, 15, 20, 25, 30), # minimum sum of instance weight in a leaf
     subsample = 1,                      # fraction of samples used per tree (1 = no subsampling)
     nrounds = choice(100, 200, 300, 400, 500, 600, 700), # number of boosting rounds
@@ -153,7 +160,7 @@ sprintf(
 tunned_model <- tunned_model |>
   dplyr::mutate(
     dplyr::across(learning_rate:verbose, ~ unlist(.x))
-)
+  )
 
 # Step 3.2 -- Build confusion matrix as a tibble
 matriz_conf_xbb_model <- tibble::tibble(
@@ -232,3 +239,61 @@ saveRDS(
   )
 )
 print("Model trained successfully!")
+
+# ============================================================
+# Step 4 -- Save model parameters to txt
+# ============================================================
+
+# Folder: same as the model RDS
+model_dir <- file.path(rds_path, "model/xgboost/")
+dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
+
+# File name uses var (same as model)
+params_filename <- paste0(
+  "XGB-parameters_",
+  length(cube$tile), "-tiles-", tiles_train, "_",
+  no.years, "-period-",
+  cube_dates[1], "_", cube_dates[length(cube_dates)],
+  "_", var, "_", process_version, ".txt"
+)
+
+params_lines <- c(
+  "# ============================================================",
+  "# XGBoost Model Parameters",
+  "# ============================================================",
+  paste0("process_version     : ", process_version),
+  paste0("var                 : ", var),
+  paste0("tiles               : ", tiles_train),
+  paste0("period              : ", no.years),
+  paste0("start_date          : ", start_date),
+  paste0("end_date            : ", end_date),
+  paste0("time_series_file    : ", time_series_name),
+  "",
+  "# --- Tuning settings ---",
+  paste0("trials              : ", 30),
+  paste0("validation_split    : ", 0.3),
+  paste0("multicores          : ", 28),
+  "",
+  "# --- Best hyperparameters (from tuning) ---",
+  paste0("learning_rate       : ", tunned_model$learning_rate[1]),
+  paste0("min_split_loss      : ", tunned_model$min_split_loss[1]),
+  paste0("max_depth           : ", tunned_model$max_depth[1]),
+  paste0("min_child_weight    : ", tunned_model$min_child_weight[1]),
+  paste0("subsample           : ", 1),
+  paste0("nrounds             : ", tunned_model$nrounds[1]),
+  paste0("nthread             : ", 28),
+  "",
+  "# --- Tuning duration ---",
+  paste0("tuning_time_sec     : ", round(sits_xgb_model_fine_tuning_time, 1)),
+  sprintf("tuning_time_hhmm    : %02d:%02d",
+          as.integer(sits_xgb_model_fine_tuning_time / 3600),
+          as.integer((sits_xgb_model_fine_tuning_time %% 3600) / 60)
+  ),
+  "",
+  "# --- Accuracy (best trial) ---",
+  paste0("overall_accuracy    : ", round(tunned_model$acc[[1]]$overall["Accuracy"], 4)),
+  paste0("kappa               : ", round(tunned_model$acc[[1]]$overall["Kappa"], 4))
+)
+
+writeLines(params_lines, file.path(model_dir, params_filename))
+message("Parameters saved: ", params_filename)

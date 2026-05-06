@@ -14,7 +14,7 @@ library(stringr)
 library(purrr)
 
 # Define the parameters: These are user-defined variables
-model_name      <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-15_12h01m.rds"
+model_name      <- "rf-model_4t_012015-012014-013015-013014_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
 
 # Date and time of the start of processing
 date_process    <- format(Sys.Date(), "%Y-%m-%d")

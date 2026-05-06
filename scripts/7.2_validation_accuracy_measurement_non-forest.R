@@ -10,10 +10,13 @@ library(sf)
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(segmetric)
+library(openxlsx)
 
 # Define the parameters: These are user-defined variables
-tiles      = '012014'
+tiles      = '000000'
 model_name <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
+pol_ref_path     <- ""
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -50,6 +53,20 @@ samples_validation_list <- dir(
   pattern = pattern,
   full.names = TRUE
 )
+
+prodes_avaliation <- function(x){
+  data.frame(
+    t(
+      c(
+        Mínimo = format(min(x, na.rm = TRUE), digits = 3),
+        Máximo = format(max(x, na.rm = TRUE), digits = 3),
+        Média  = format(mean(x, na.rm = TRUE), digits = 3),
+        Mediana = format(median(x, na.rm = TRUE), digits = 3),
+        Desvio_Padrão = format(sd(x, na.rm = TRUE), digits = 3)
+      )
+    )
+  )
+}
 
 # Plotting function
 plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
@@ -92,11 +109,11 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
   # ── 2. Accuracies ─────────────────────────────────────────────────────────────
   acuracias <- data.frame(
     class         = names(acc$accuracy[[1]]),
-    user_accuracy = round(as.numeric(acc$accuracy[[1]]), 2),
-    prod_accuracy = round(as.numeric(acc$accuracy[[2]]), 2)
+    user_accuracy = round(as.numeric(acc$accuracy[[1]]), 3),
+    prod_accuracy = round(as.numeric(acc$accuracy[[2]]), 3)
   ) %>%
     dplyr::mutate(
-      f1_score = round(2 * (user_accuracy * prod_accuracy) / (user_accuracy + prod_accuracy), 2)
+      f1_score = round(2 * (user_accuracy * prod_accuracy) / (user_accuracy + prod_accuracy), 3)
     ) %>%
     tidyr::pivot_longer(cols = -class, names_to = "tipo_acuracia", values_to = "acuracia")
   
@@ -170,14 +187,10 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
 # ============================================================
 
 # Step 1.1 -- Get labels associated to the trained model data set (Enumerate them in the order they appear according to "sits_labels(model)")
-cube_dirs <- list.dirs(class_dir, recursive = TRUE)
+pattern <- paste0(".*", tiles, ".*", version, ".*\\.tif$")
 
-cube_dirs <- cube_dirs[
-  sapply(cube_dirs, function(x) {
-    files <- list.files(x, pattern = "\\.tif$")
-    any(grepl(version, files))
-  })
-]
+cube_dirs <- list.dirs(class_dir, recursive = TRUE) |> 
+  purrr::keep(~ length(list.files(.x, pattern = pattern)) > 0)
 
 # Step 1.2 -- Retrieve local cube of Full Map classified
 cube <- sits_cube(
@@ -207,7 +220,7 @@ cube <- sits_cube(
                  "band", "version"))
 
 # Step 1.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep("*all-classes*",
+samples_validation <- st_read(grep(".*_all-classes_*.",
                                    samples_validation_list, value = TRUE))
 
 # Step 1.3 -- Calculate accuracy
@@ -253,7 +266,7 @@ class_cube <- sits_cube(
                  "band", "version"))
 
 # Step 2.2 -- Get validation samples points (in geographical coordinates - lat/long)
-samples_validation <- st_read(grep("*prodes*",
+samples_validation <- st_read(grep(".*_prodes_*.",
                                    samples_validation_list, value = TRUE))
 
 # Step 2.3 -- Calculate accuracy
@@ -276,3 +289,54 @@ plot_accuracy(
   plots_dir = plots_dir,
   prefix    = "prodes-acc"
 )
+
+# ============================================================
+# 3. Intersect Over Union
+# ============================================================
+resumo_metricas <- createWorkbook()
+
+#Read prodes polygons
+pol_ref <- read_sf(file.path(samples_dir,))
+
+pattern <- paste0("sits-classification.*", tile, ".*\\.gpkg$")
+pol_class_path <- list.files(path = class_dir,
+                             pattern = pattern,
+                             full.names = TRUE,
+                             recursive = TRUE)
+
+#Read post-processed sits polygons
+pol_class <- read_sf(pol_class_path)
+
+#create segmetric object
+seg_obj <- sm_read(ref_sf = pol_ref,
+                   seg_sf = pol_class)
+
+#Compute metrics
+metricas <- sm_compute(seg_obj, "OS2") %>%
+  sm_compute("US2") %>%
+  sm_compute("AFI") %>%
+  sm_compute("D_index") %>%
+  sm_compute("precision") %>%
+  sm_compute("recall") %>%
+  sm_compute("M") %>%
+  sm_compute("IoU") %>%
+  sm_compute("Dice")
+
+metricas_names <- names(metricas)
+
+r_df <- data.frame()
+
+addWorksheet(resumo_metricas, tile)
+
+for(i in seq(length(metricas))){
+  r <- prodes_avaliation(metricas[[i]])
+  row.names(r) <- metricas_names[i]
+  r_df <- rbind(r_df, r)
+}
+
+writeData(resumo_metricas, nome_seg, r_df, rowNames = TRUE)
+
+path <- file.path(dirname(pol_class_path),
+                  sprintf("metricas_%s.xlsx", tile))
+
+saveWorkbook(resumo_metricas, path, overwrite = TRUE)
