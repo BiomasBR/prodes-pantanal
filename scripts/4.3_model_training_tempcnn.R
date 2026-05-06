@@ -229,9 +229,9 @@ plot(tempcnn_model)
 saveRDS(
   tempcnn_model,
   paste0(
-    rds_path, "model/tempcnn/", "TCNN-model_",
-    length(cube$tile), "-tiles-", tiles_train, "_",
-    no.years, "-period-",
+    rds_path, "model/temp_cnn/", "tcnn-model_",
+    length(cube$tile), tiles_train, "_",
+    no.years,
     cube_dates[1], "_", cube_dates[length(cube_dates)],
     "_", var, "_", process_version, ".rds"
   )
