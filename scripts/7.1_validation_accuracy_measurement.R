@@ -92,11 +92,11 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
   # ── 2. Accuracies ─────────────────────────────────────────────────────────────
   acuracias <- data.frame(
     class         = names(acc$accuracy[[1]]),
-    user_accuracy = round(as.numeric(acc$accuracy[[1]]), 2),
-    prod_accuracy = round(as.numeric(acc$accuracy[[2]]), 2)
+    user_accuracy = round(as.numeric(acc$accuracy[[1]]), 3),
+    prod_accuracy = round(as.numeric(acc$accuracy[[2]]), 3)
   ) %>%
     dplyr::mutate(
-      f1_score = round(2 * (user_accuracy * prod_accuracy) / (user_accuracy + prod_accuracy), 2)
+      f1_score = round(2 * (user_accuracy * prod_accuracy) / (user_accuracy + prod_accuracy), 3)
     ) %>%
     tidyr::pivot_longer(cols = -class, names_to = "tipo_acuracia", values_to = "acuracia")
   
