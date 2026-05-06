@@ -10,10 +10,13 @@ library(sf)
 library(dplyr)
 library(ggplot2)
 library(stringr)
+library(segmetric)
+library(openxlsx)
 
 # Define the parameters: These are user-defined variables
 tiles      = '012014'
 model_name <- "rf-model_4t_012015-012014-013015-013014_1y_2024-07-27_2025-07-28_all-samples-new-pol-avg-false_2026-02-25_21h03m.rds"
+pol_ref_path     <- ""
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -50,6 +53,20 @@ samples_validation_list <- dir(
   pattern = pattern,
   full.names = TRUE
 )
+
+prodes_avaliation <- function(x){
+  data.frame(
+    t(
+      c(
+        Mínimo = format(min(x, na.rm = TRUE), digits = 3),
+        Máximo = format(max(x, na.rm = TRUE), digits = 3),
+        Média  = format(mean(x, na.rm = TRUE), digits = 3),
+        Mediana = format(median(x, na.rm = TRUE), digits = 3),
+        Desvio_Padrão = format(sd(x, na.rm = TRUE), digits = 3)
+      )
+    )
+  )
+}
 
 # Plotting function
 plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
@@ -272,3 +289,55 @@ plot_accuracy(
   plots_dir = plots_dir,
   prefix    = "prodes-acc"
 )
+
+# ============================================================
+# 3. Intersect Over Union
+# ============================================================
+
+resumo_metricas <- createWorkbook()
+
+#Read prodes polygons
+pol_ref <- read_sf(file.path(samples_dir,))
+
+pattern <- paste0("sits-classification.*", tile, ".*\\.gpkg$")
+pol_class_path <- list.files(path = class_dir,
+                             pattern = pattern,
+                             full.names = TRUE,
+                             recursive = TRUE)
+
+#Read post-processed sits polygons
+pol_class <- read_sf(pol_class_path)
+
+#create segmetric object
+seg_obj <- sm_read(ref_sf = pol_ref,
+                   seg_sf = pol_class)
+
+#Compute metrics
+metricas <- sm_compute(seg_obj, "OS2") %>%
+  sm_compute("US2") %>%
+  sm_compute("AFI") %>%
+  sm_compute("D_index") %>%
+  sm_compute("precision") %>%
+  sm_compute("recall") %>%
+  sm_compute("M") %>%
+  sm_compute("IoU") %>%
+  sm_compute("Dice")
+
+metricas_names <- names(metricas)
+
+r_df <- data.frame()
+
+addWorksheet(resumo_metricas, tile)
+
+for(i in seq(length(metricas))){
+  r <- prodes_avaliation(metricas[[i]])
+  row.names(r) <- metricas_names[i]
+  r_df <- rbind(r_df, r)
+}
+
+writeData(resumo_metricas, nome_seg, r_df, rowNames = TRUE)
+
+path <- file.path(dirname(pol_class_path),
+                  sprintf("metricas_%s.xlsx", tile))
+
+saveWorkbook(resumo_metricas, path, overwrite = TRUE)
