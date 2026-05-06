@@ -229,7 +229,15 @@ sampling_design <- sits_sampling_design(
 # 3.2 -- Show sampling design
 sampling_design
 
-# 3.3 -- Generate stratified samples
+# 3.3 -- Save sampling design as a CSV data frame 
+write.csv(
+  as.data.frame(sampling_design),
+  file = file.path(samples_dir, paste0("validation-samples_all-classes_", cube$tile,
+                                       "_", version, "_", date_process, ".txt")),
+  row.names = TRUE  # TRUE para manter os nomes das classes como linha
+)
+
+# 3.4 -- Generate stratified samples
 samples_sf <- sits_stratified_sampling(
   cube = cube,
   sampling_design = sampling_design,
@@ -238,14 +246,14 @@ samples_sf <- sits_stratified_sampling(
   progress = TRUE,
   multicores = 12)
 
-# 3.4 -- Total of each class
+# 3.5 -- Total of each class
 samples_sf%>% group_by(label) %>% summarise(num = n())
 
-# 3.5 -- Define File Path
+# 3.6 -- Define File Path
 samples_sf_file_path <- file.path(samples_dir, paste0("validation-samples_all-classes_", cube$tile,
                                                       "_", version, "_", date_process, ".gpkg"))
 
-# 3.6 -- Save samples_sf object as GPKG file
+# 3.7 -- Save samples_sf object as GPKG file
 sf::st_write(samples_sf, samples_sf_file_path, append = FALSE)
 
 # ============================================================
