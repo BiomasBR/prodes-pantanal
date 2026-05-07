@@ -127,7 +127,7 @@ plot_accuracy <- function(acc, version, tile, plots_dir, prefix) {
       y       = "Class",
       x       = "Accuracy",
       title   = "Accuracies",
-      caption = paste0("Global Accuracy: ", round(acc$accuracy[[3]], 2))
+      caption = paste0("Global Accuracy: ", round(acc$accuracy[[3]], 3))
     ) +
     scale_y_discrete(limits = rev, labels = label_other) +
     scale_x_discrete(labels = c("prod_accuracy" = "Prod Acc",
