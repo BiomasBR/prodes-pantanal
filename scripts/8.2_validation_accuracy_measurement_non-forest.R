@@ -16,7 +16,6 @@ library(openxlsx)
 # Define the parameters: These are user-defined variables
 tiles      = '000000'
 model_name <- "rf-model_2t_014002-015002_2y_2023-07-28_2025-07-28_com-nuvens-cheias_2026-04-07_14h45m.rds"
-pol_ref_path     <- ""
 
 # Extract the date of the string separated by "_"
 start_date <- stringr::str_split_i(model_name, "_", 5)
@@ -293,10 +292,12 @@ plot_accuracy(
 # ============================================================
 # 3. Intersect Over Union
 # ============================================================
-resumo_metricas <- createWorkbook()
+pol_ref_path <- list.files("data/raw/samples/prodes-2025",
+                           pattern = sprintf(".*%s*.", tiles),
+                           full.names = TRUE)
 
 #Read prodes polygons
-pol_ref <- read_sf(file.path(samples_dir,))
+pol_ref <- read_sf(pol_ref_path)
 
 pattern <- paste0("sits-classification.*", tile, ".*\\.gpkg$")
 pol_class_path <- list.files(path = class_dir,
@@ -324,9 +325,10 @@ metricas <- sm_compute(seg_obj, "OS2") %>%
 
 metricas_names <- names(metricas)
 
-r_df <- data.frame()
+resumo_metricas <- createWorkbook()
+addWorksheet(resumo_metricas, tiles)
 
-addWorksheet(resumo_metricas, tile)
+r_df <- data.frame()
 
 for(i in seq(length(metricas))){
   r <- prodes_avaliation(metricas[[i]])
@@ -337,6 +339,6 @@ for(i in seq(length(metricas))){
 writeData(resumo_metricas, nome_seg, r_df, rowNames = TRUE)
 
 path <- file.path(dirname(pol_class_path),
-                  sprintf("metricas_%s.xlsx", tile))
+                  sprintf("metricas_%s.xlsx", tiles))
 
 saveWorkbook(resumo_metricas, path, overwrite = TRUE)
