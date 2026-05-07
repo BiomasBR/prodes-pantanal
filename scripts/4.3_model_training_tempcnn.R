@@ -229,11 +229,15 @@ plot(tempcnn_model)
 saveRDS(
   tempcnn_model,
   paste0(
-    rds_path, "model/temp_cnn/", "tcnn-model_",
-    length(cube$tile), tiles_train, "_",
-    no.years,
-    cube_dates[1], "_", cube_dates[length(cube_dates)],
-    "_", var, "_", process_version, ".rds"
-  )
-)
+    rds_path, "model/temp_cnn/",
+    paste(
+      "tcnn-model",
+      length(cube$tile),
+      tiles_train, no.years,
+      cube_dates[1],
+      cube_dates[length(cube_dates)],
+      var, process_version,
+      sep = "_"),
+    ".rds"))
+
 print("Model trained successfully!")
