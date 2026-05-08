@@ -185,14 +185,14 @@ ggplot(matriz_conf_xbb_model, aes(x = Reference, y = Prediction, fill = Freq)) +
 xgb_model <- sits_train(
   samples = train_samples,
   ml_method = sits_xgboost(
-    learning_rate = tunned_model$learning_rate[1],
-    min_split_los = tunned_model$min_split_loss[1], # NOTE: check typo (min_split_los vs min_split_loss)
-    max_depth = tunned_model$max_depth[1],
-    min_child_weight = tunned_model$min_child_weight[1],
-    subsample = 1,
-    nrounds = tunned_model$nrounds[1],
-    nthread = 28,
-    verbose = TRUE
+  learning_rate = tunned_model$learning_rate[1],
+  min_split_loss = tunned_model$min_split_loss[1],
+  max_depth = tunned_model$max_depth[1],
+  min_child_weight = tunned_model$min_child_weight[1],
+  subsample = 1,
+  nrounds = tunned_model$nrounds[1],
+  nthread = 28,
+  verbose = TRUE
   )
 )
 
@@ -233,7 +233,7 @@ print("Model trained successfully!")
 model_dir <- file.path(rds_path, "model/xgboost/")
 dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 
-# File name uses var (same as model)
+# File name uses same pattern as model
 params_filename <- paste0(
   "XGB-parameters_",
   length(cube$tile), "-tiles-", tiles_train, "_",
@@ -242,17 +242,20 @@ params_filename <- paste0(
   "_", var, "_", process_version, ".txt"
 )
 
+# Parameters used in training
 params_lines <- c(
   "# ============================================================",
   "# XGBoost Model Parameters",
   "# ============================================================",
+  "",
+  "# --- General information ---",
   paste0("process_version     : ", process_version),
   paste0("var                 : ", var),
   paste0("tiles               : ", tiles_train),
-  paste0("period              : ", no.years),
-  paste0("start_date          : ", start_date),
-  paste0("end_date            : ", end_date),
-  paste0("time_series_file    : ", time_series_name),
+  paste0("number_of_tiles     : ", length(cube$tile)),
+  paste0("period_years        : ", no.years),
+  paste0("start_date          : ", cube_dates[1]),
+  paste0("end_date            : ", cube_dates[length(cube_dates)]),
   "",
   "# --- Tuning settings ---",
   paste0("trials              : ", 30),
@@ -270,15 +273,28 @@ params_lines <- c(
   "",
   "# --- Tuning duration ---",
   paste0("tuning_time_sec     : ", round(sits_xgb_model_fine_tuning_time, 1)),
-  sprintf("tuning_time_hhmm    : %02d:%02d",
-          as.integer(sits_xgb_model_fine_tuning_time / 3600),
-          as.integer((sits_xgb_model_fine_tuning_time %% 3600) / 60)
+  sprintf(
+    "tuning_time_hhmm    : %02d:%02d",
+    as.integer(sits_xgb_model_fine_tuning_time / 3600),
+    as.integer((sits_xgb_model_fine_tuning_time %% 3600) / 60)
   ),
   "",
   "# --- Accuracy (best trial) ---",
-  paste0("overall_accuracy    : ", round(tunned_model$acc[[1]]$overall["Accuracy"], 4)),
-  paste0("kappa               : ", round(tunned_model$acc[[1]]$overall["Kappa"], 4))
+  paste0(
+    "overall_accuracy    : ",
+    round(tunned_model$acc[[1]]$overall["Accuracy"], 4)
+  ),
+  paste0(
+    "kappa               : ",
+    round(tunned_model$acc[[1]]$overall["Kappa"], 4)
+  ),
+  "",
+  "# --- Execution info ---",
+  paste0("training_datetime   : ", Sys.time())
 )
-
-writeLines(params_lines, file.path(model_dir, params_filename))
+# Save txt file
+writeLines(
+  params_lines,
+  file.path(model_dir, params_filename)
+)
 message("Parameters saved: ", params_filename)
