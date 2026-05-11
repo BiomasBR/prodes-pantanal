@@ -218,12 +218,10 @@ saveRDS(
     rds_path, "model/temp_cnn/",
     paste(
       "tcnn-model",
-      length(cube$tile),
+      length(tiles),
       tiles_train, no.years,
-      cube_dates[1],
-      cube_dates[length(cube_dates)],
-      var, process_version,
-      sep = "_"),
+      start_date, end_date,
+      var, process_version,sep = "_"),
     ".rds"))
 
 print("Model trained successfully!")
@@ -239,9 +237,9 @@ dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 # File name uses same pattern as model
 params_filename <- paste0(
   "TCNN-parameters_",
-  length(cube$tile), "-tiles-", tiles_train, "_",
+  length(tiles), "-tiles-", tiles_train, "_",
   no.years, "-period-",
-  cube_dates[1], "_", cube_dates[length(cube_dates)],
+  start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
 )
 
@@ -255,10 +253,10 @@ params_lines <- c(
   paste0("process_version         : ", process_version),
   paste0("var                     : ", var),
   paste0("tiles                   : ", tiles_train),
-  paste0("number_of_tiles         : ", length(cube$tile)),
   paste0("period_years            : ", no.years),
-  paste0("start_date              : ", cube_dates[1]),
-  paste0("end_date                : ", cube_dates[length(cube_dates)]),
+  paste0("number_of_tiles         : ", length(tiles)),
+  paste0("start_date              : ", start_date),
+  paste0("end_date                : ", end_date),
   "",
   "# --- CNN architecture ---",
   paste0("cnn_layers              : ", paste(c(64, 64, 64), collapse = ", ")),
