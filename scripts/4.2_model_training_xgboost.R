@@ -236,9 +236,9 @@ dir.create(model_dir, showWarnings = FALSE, recursive = TRUE)
 # File name uses same pattern as model
 params_filename <- paste0(
   "XGB-parameters_",
-  length(cube$tile), "-tiles-", tiles_train, "_",
+  length(tiles), "-tiles-", tiles_train, "_",
   no.years, "-period-",
-  cube_dates[1], "_", cube_dates[length(cube_dates)],
+  start_date, "_", end_date,
   "_", var, "_", process_version, ".txt"
 )
 
