@@ -1,224 +1,352 @@
 # ============================================================
-#  Classification of Vector Data Cube
+# Train a Random Forest model
 # ============================================================
 
 # Load required libraries
 library(sits)
-library(tibble)
 library(ggplot2)
-library(terra)
-library(RColorBrewer)
+library(stringr)
+library(randomForestExplainer, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4.4")
 
 # Define the parameters: These are user-defined variables
-model_name    <- "rf-model_4t_012014-012015-013014-013015_1y_2024-08-01_2025-07-31_all-samples-new-pol-avg-false_2026-04-15_12h01m.rds"
-seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular"# SITS recognizes "underline" as a separator of information. Use only for this purpose.
-tile          <- "012014" # one tile per classification run
+time_series_name  <- "TS-tiles_020023-020024_2y_2022-08-01_2024-07-31_first-samples-grouped-v3_2026-05-08_08h08m.rds"
 
-# Extract the date of the string separated by "_"
-start_date <- stringr::str_split_i(model_name, "_", 5)
-end_date   <- stringr::str_split_i(model_name, "_", 6)
+# Extract the tiles and date of the string separated by "_"
+tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
+start_date <- stringr::str_split_i(time_series_name, "_", 4)
+end_date   <- stringr::str_split_i(time_series_name, "_", 5)
 
-# File and folder paths 
-models <- c("rf"   = "random_forest",
-            "xgb"  = "xgboost",
-            "ltae" = "ltae",
-            "tcnn" = "temp_cnn",
-            "rnet" = "res_net",
-            "lstm" = "ltsm")
-model_type    <- stringr::str_split_i(model_name, "-", 1)
-model_path    <- file.path("data/rds/model", models[model_type], model_name)
-vector_path   <- "data/segments"
-class_path    <- "data/class"
-mixture_path  <- "data/raw/mixture_model"
+# Function to read class names and their colors::IMPORTANT
+read_class_config <- function(config_file = "class_config.txt") {
+  
+  if (!file.exists(config_file)) {
+    stop(paste("Configuration file not found:", config_file))
+  }
+  
+  lines <- readLines(config_file, encoding = "UTF-8", warn = FALSE)
+  
+  # Remove empty lines and comments
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & !startsWith(lines, "#")]
+  
+  # Identify sections and populate lists
+  current_section  <- NULL
+  class_trans_list <- list()
+  colors_list      <- list()
+  
+  for (line in lines) {
+    if (startsWith(line, "[") && endsWith(line, "]")) {
+      current_section <- gsub("\\[|\\]", "", line)
+      next
+    }
+    
+    if (!is.null(current_section) && grepl("=", line)) {
+      parts <- strsplit(line, "=", fixed = TRUE)[[1]]
+      key   <- trimws(parts[1])
+      value <- trimws(paste(parts[-1], collapse = "=")) # preserves '=' in hex codes
+      
+      if (current_section == "CLASS_TRANSLATION") {
+        class_trans_list[[key]] <- value
+      } else if (current_section == "COLORS") {
+        colors_list[[key]] <- value
+      }
+    }
+  }
+  
+  class_translation <- unlist(class_trans_list)
+  my_colors         <- unlist(colors_list)
+  
+  message(sprintf("Config loaded: %d class translations | %d colors",
+                  length(class_translation), length(my_colors)))
+  
+  return(list(
+    class_translation = class_translation,
+    my_colors         = my_colors
+  ))
+}
 
-# Identifier to distinguish this model run from previous runs
-var <- stringr::str_split_i(model_name, "_", 7)
+# Date and time of the start of processing
+date_process    <- format(Sys.Date(), "%Y-%m-%d_")
+time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
+process_version <- paste0(date_process, time_process)
+
+# File and folder paths
+time_series_path  <- file.path("data/rds/time_series/", time_series_name)
+rds_path          <- "data/rds/"
+plots_path        <- "data/plots"
+config_dir        <- ".."
+
+# Identifier to distinguish this model run from previous versions
+var <- stringr::str_split_i(time_series_name, "_", 6)
+
+# Plots organized by var
+plots_dir <- file.path(plots_path, var)
+dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Define and Load Data Cubes
 # ============================================================
 
-# Step 1.1 -- Create a classification cube from a collection
+# Step 1.1 -- Create a training cube from a collection
 cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
   bands       = c('B02', 'B03', 'B04', 'B05', 'B06', 'B07', 'B08', 'B8A', 'B11', 'B12', 'NDVI', 'NBR', 'EVI', 'CLOUD'),
-  tiles       = tile,
+  tiles       = tiles,
   start_date  = start_date,
   end_date    = end_date,
   progress    = TRUE)
 
-# Step 1.2 -- Extract tiles and duration from the cube (in years)
+# Step 1.2 -- Calculate the number of years in the training cube
 no.years <- paste0(floor(lubridate::year(end_date) - lubridate::year(start_date)), "y")
-
-# Step 1.3 -- Retrieve Mixture Model Cube from a predefined repository
-mm_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  bands       = c("SOIL", "VEG", "WATER"),
-  tiles       = tile,
-  data_dir    = mixture_path,
-  start_date  = start_date,
-  end_date    = end_date,
-  progress    = TRUE)
-
-# Step 1.4 -- Merge the Classification Cube with Mixture Model Cube
-cube_merge_lsmm_class <- sits_merge(mm_cube, cube)
-
-# Step 1.5 -- Create a local segmented cube based on previous segmentation results
-local_segs_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  raster_cube = cube_merge_lsmm_class,
-  vector_dir  = vector_path,
-  vector_band = "segments",
-  version     = seg_version, 
-  parse_info  = c("satellite", "sensor","tile", "start_date", 
-                  "end_date", "band", "version", "X1"))
-
-# Step 1.6 -- Create output directory per tile
-tile_period_dir <- file.path(class_path, tile, "original_class")
-dir.create(tile_period_dir, recursive = TRUE, showWarnings = FALSE)
+tiles_train <- paste(sort(tiles), collapse = "-")
+no.cubes <- paste0(length(cube$tile), "t")
 
 # ============================================================
-# 2. Probability and Classification Mapping
+# 2. Cross-validation of training data
 # ============================================================
 
-# Step 2.1 -- Retrieve the trained model
-model <- readRDS(model_path)
+# Step 2.1 -- Reading training samples
+train_samples <- readRDS(time_series_path)
 
-# Step 2.2 -- Define the version name of probability file
-version <- paste(model_type, no.years, var, sep = "-")
+# Step 2.2 -- Load color palette from external config file
+config     <- read_class_config(file.path(config_dir, "class_config.txt"))
+my_colors  <- config$my_colors
+my_colors  <- my_colors[names(my_colors) %in% unique(train_samples$label)]
 
-# Step 2.3 -- Classify segments according to the probabilities and calculate the process duration
-sits_classify_start <- Sys.time()
-class_prob <- sits_classify(
-  data        = local_segs_cube,
-  ml_model    = model,
-  multicores  = 28,  # adapt to your computer CPU core availability
-  memsize     = 180, # adapt to your computer memory availability
-  output_dir  = tile_period_dir,
-  version     = version,
-  n_sam_pol   = 16, #  Number of time series per segment to be classified (integer, min = 10, max = 50)
-  verbose     = TRUE,
-  progress    = TRUE
-)
-sits_classify_end <- Sys.time()
-sits_classify_time <- as.numeric(sits_classify_end - sits_classify_start, units = "secs")
-sprintf("SITS classify process duration (HH:MM): %02d:%02d",
-        as.integer(sits_classify_time / 3600),
-        as.integer((sits_classify_time %% 3600) / 60))
-
-# Step 2.4 -- Reconstruct vector cube with classification probabilities 
-vector_cube <- sits_cube(
-  source      = "BDC",
-  collection  = "SENTINEL-2-16D",
-  raster_cube = cube_merge_lsmm_class,
-  vector_dir  = tile_period_dir,
-  vector_band = "probs",
-  version     = version, # do not use underline character
-  parse_info  = c("X1", "X2", "tile", "start_date", "end_date", "band", "version")
-)
-
-# Step 2.5 -- Generate Final Classified Map of Segments
-class_map <- sits_label_classification(
-  cube        = class_prob,
-  output_dir  = tile_period_dir,
-  version     = version,
-  multicores  = 28,  # adapt to your computer CPU core availability
-  memsize     = 180, # adapt to your computer memory availability
-  progress    = TRUE
-)
-print("Classification finished!")
-
-# ============================================================
-# 3. Uncertainty
-# ============================================================
-
-# Step 3.1 -- Define function to calculate entropy, rasterize and exclude .gpkg
-compute_uncertainty_raster <- function(
-  vector_cube,
-  tile_period_dir,
-  version,
+# Step 2.3 -- Using k-fold validation
+sits_kfold_validate_start <- Sys.time()
+rfor_validate <- sits_kfold_validate(
+  samples = train_samples,
+  folds = 5, # how many times to split the data (default = 5)
+  ml_method = sits_rfor(),
   multicores = 28,
-  memsize    = 180,
-  delete_gpkg = TRUE
+  progress = TRUE) # adapt to your computer CPU core availability
+sits_kfold_validate_end <- Sys.time()
+sits_kfold_validate_time <- as.numeric(sits_kfold_validate_end - sits_kfold_validate_start, units = "secs")
+sprintf("SITS kfold_validate process duration (HH:MM): %02d:%02d", 
+        as.integer(sits_kfold_validate_time / 3600),
+        as.integer((sits_kfold_validate_time %% 3600) / 60))
+
+# Step 2.3.1 -- Plot the confusion matrix
+plot(rfor_validate, type = "confusion_matrix")
+
+# Step 2.3.2 -- Plot the metrics by class
+plot(rfor_validate, type = "metrics")
+
+# Step 2.4 -- Save confusion matrix plot
+g_cm <- plot(rfor_validate, type = "confusion_matrix")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-confusion-matrix_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_cm,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
+
+# Step 2.4.1 -- Save metrics plot
+g_metrics <- plot(rfor_validate, type = "metrics")
+ggplot2::ggsave(
+  filename = file.path(
+    plots_dir,
+    paste0(
+      "Kfold-metrics_",
+      tiles_train, "_",
+      start_date, "_", end_date, "_",
+      var, "_",
+      format(Sys.Date(), "%Y-%m-%d"),
+      ".png"
+    )
+  ),
+  plot = g_metrics,
+  width = 1600,
+  height = 1000,
+  units = "px",
+  dpi = 200
+)
+
+# ============================================================
+# 3. Training and saving model
+# ============================================================
+
+# Step 3.1 -- Set a seed of random number generator (RNG) for reproducibility
+set.seed(88)
+
+# Step 3.2 -- Train the model
+rf_model <- sits_train(
+  samples   = train_samples,
+  ml_method = sits_rfor(num_trees = 100)
+)
+
+# Step 3.3 -- Save the ML model to a R file
+saveRDS(rf_model,
+        paste0(rds_path, "model/random_forest/",
+               paste("rf-model", no.cubes,
+                     tiles_train, no.years,
+                     start_date, end_date,
+                     var, process_version, sep = "_"),
+               ".rds"))
+
+print("Model trained successfully!")
+
+# ============================================================
+# 4. Plotting Section
+# ============================================================
+
+# Step 4.1 -- Define the function to plot and save the most important variables of the model
+save_rf_model_plot <- function(
+    rf_model,
+    plots_dir,
+    tiles,
+    no.years,
+    start_date,
+    end_date,
+    var,
+    width  = 1200,
+    height = 800,
+    res    = 150,
+    scale  = 1
 ) {
   
-  # Calculate uncertainty vector cube
-  uncertainty <- sits_uncertainty(
-    vector_cube,
-    type       = "entropy",
-    multicores = multicores,
-    memsize    = memsize,
-    output_dir = tile_period_dir,
-    version    = version,
-    progress   = TRUE
+  # Generate the native sits/randomForestExplainer plot
+  g <- plot(rf_model)
+  
+  # Render in RStudio
+  print(g)
+  
+  # Build file name
+  tiles_str <- paste(tiles, collapse = "-")
+  file_name <- paste0(
+    "RF-minimal-tree-depth",
+    "_", tiles_str,
+    "_", no.years,
+    "_", start_date,
+    "_", end_date,
+    "_", var,
+    "_", format(Sys.Date(), "%Y-%m-%d"),
+    ".png"
   )
   
-  # List entropy .gpkg files and get the most recent one
-  uncertainty_files <- list.files(
-    path      = tile_period_dir,
-    pattern   = "entropy.*\\.gpkg$",
-    full.names = TRUE
-  )
-  uncertainty_file <- uncertainty_files[which.max(file.info(uncertainty_files)$mtime)]
+  # Save
+  dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+  full_path <- file.path(plots_dir, file_name)
   
-  # Read the segment polygons file with entropy
-  uncertainty_polygons <- terra::vect(uncertainty_file)
+  ggplot2::ggsave(full_path, plot = g, width = width, height = height,
+                  units = "px", dpi = res, scale = scale)
   
-  # Create a raster template based on uncertainty_polygons
-  raster_template <- terra::rast(
-    terra::ext(uncertainty_polygons),
-    res = terra::res(terra::rast(vector_cube$file_info[[1]]$path[1])),
-    crs = terra::crs(uncertainty_polygons)
-  )
-  
-  # Rasterize entropy values and scale to UINT16
-  uncertainty_raster       <- terra::rasterize(uncertainty_polygons, raster_template, field = "entropy")
-  uncertainty_raster_uint16 <- round(uncertainty_raster * 10000)
-  
-  # Plot
-  plot(
-    uncertainty_raster_uint16,
-    col     = grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(11, "Spectral")))(100),
-    maxcell = terra::ncell(uncertainty_raster_uint16),
-    main    = "Uncertainty Map - Full Resolution"
-  )
-  
-  # Save as .tif (UINT16, DEFLATE compressed)
-  tile_period_dir <- file.path(class_path, tile, "original_class")
-  
-  tif_path <- file.path(
-    tile_period_dir,
-    paste0(tools::file_path_sans_ext(basename(uncertainty_file)), ".tif")
-  )
-  
-  terra::writeRaster(
-    uncertainty_raster_uint16,
-    filename  = tif_path,
-    datatype  = "INT2U",
-    overwrite = TRUE,
-    gdal      = c("COMPRESS=DEFLATE", "PREDICTOR=2", "ZLEVEL=9"),
-    progress  = TRUE
-  )
-  
-  # Delete the source .gpkg files (optional)
-  if (delete_gpkg) {
-    removed <- file.remove(uncertainty_files)
-    message("Deleted .gpkg files: ", paste(uncertainty_files[removed], collapse = ", "))
-  }
-  
-  message("Uncertainty raster saved: ", tif_path)
-  invisible(tif_path)
+  message("Plot saved: ", full_path)
+  invisible(full_path)
 }
 
-# Step 3.1 -- Run function to calculate entropy, rasterize and exclude .gpkg
-compute_uncertainty_raster(
-  vector_cube     = vector_cube,
-  tile_period_dir = class_path,
-  version         = version,
-  multicores      = 28, # adapt to your computer CPU core availability
-  memsize         = 180, # adapt to your computer CPU core availability
-  delete_gpkg     = TRUE  # Keep the .gpkg file if you want to inspect it beforehand
+# Step 4.2 -- Run the function to plot and save the most important variables of the model
+save_rf_model_plot(
+  rf_model   = rf_model,
+  plots_dir  = plots_dir,
+  tiles      = tiles,
+  no.years   = no.years,
+  start_date = start_date,
+  end_date   = end_date,
+  var        = var,
+  width      = 1600,   # width in pixels
+  height     = 1000,   # height in pixels
+  res        = 200,    # DPI
+  scale      = 1       # increases all elements proportionally  
+)
+
+# Step 4.3 --  Define the function to plot and save Out of Box error by the number of trees
+save_rf_oob_plot <- function(
+    rf_model,
+    plots_dir,
+    tiles,
+    no.years,
+    start_date,
+    end_date,
+    var,
+    width  = 1200,
+    height = 800,
+    res    = 150,
+    scale  = 1
+) {
+  
+  # Export the model object
+  rf_model2 <- environment(rf_model)$model
+  
+  # Convert err.rate matrix to tidy data frame for ggplot
+  err_df <- as.data.frame(rf_model2$err.rate)
+  err_df$ntree <- seq_len(nrow(err_df))
+  
+  err_long <- tidyr::pivot_longer(
+    err_df,
+    cols      = -ntree,
+    names_to  = "Class",
+    values_to = "OOB_Error"
+  )
+  
+  # Build ggplot
+  g <- ggplot2::ggplot(err_long, ggplot2::aes(x = ntree, y = OOB_Error, color = Class)) +
+    ggplot2::geom_line(linewidth = 0.9) +
+    ggplot2::labs(
+      title    = "Out-of-Bag Error by Number of Trees",
+      subtitle = paste0(paste(tiles, collapse = ", "), " | ", start_date, " to ", end_date),
+      x        = "Number of Trees (ntree)",
+      y        = "OOB Error",
+      color    = "Class"
+    ) +
+    ggplot2::theme_minimal(base_size = 11) +
+    ggplot2::theme(
+      plot.title         = ggplot2::element_text(face = "bold", size = 13),
+      plot.subtitle      = ggplot2::element_text(color = "gray40", size = 9),
+      panel.grid.minor   = ggplot2::element_blank(),
+      legend.position    = "right"
+    )
+  print(g)
+  
+  # Build file name
+  tiles_str <- paste(tiles, collapse = "-")
+  file_name <- paste0(
+    "RF-oob-ntree-mde",
+    "_", tiles_str,
+    "_", no.years,
+    "_", start_date,
+    "_", end_date,
+    "_", var,
+    "_", format(Sys.Date(), "%Y-%m-%d"),
+    ".png"
+  )
+  
+  # Save
+  dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+  full_path <- file.path(plots_dir, file_name)
+  
+  ggplot2::ggsave(full_path, plot = g, width = width, height = height,
+                  units = "px", dpi = res, scale = scale)
+  
+  message("Plot saved: ", full_path)
+  invisible(full_path)
+}
+
+# Step 4.4 --  Define the function to plot and save Out of Box error by the number of trees
+save_rf_oob_plot(
+  rf_model   = rf_model,
+  plots_dir  = plots_dir,
+  tiles      = tiles,
+  no.years   = no.years,
+  start_date = start_date,
+  end_date   = end_date,
+  var        = var,
+  width      = 1600,   # width in pixels
+  height     = 1000,   # height in pixels
+  res        = 200,    # DPI
+  scale      = 1.5     # increases all elements proportionally  
 )
