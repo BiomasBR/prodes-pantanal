@@ -8,14 +8,14 @@ library(lubridate)
 library(sits)
 
 # Define the parameters: These are user-defined variables
-start_date <- '2025-07-01'
-end_date   <- '2025-07-31'
-tiles      <- '014002'
+start_date <- '2024-07-01'
+end_date   <- '2024-07-31'
+tiles      <- '020024'
 
 # Parameters for SNIC segmentation
 grid_seeding <- "rectangular"
-spacing      <- 10
-compactness  <- 0.3
+spacing      <- 6
+compactness  <- 0.1
 padding      <- 0
 
 # File and folder paths
@@ -45,7 +45,7 @@ cube <- sits_cube(
 mm_cube <- sits_cube(
   source     = "BDC",
   collection = "SENTINEL-2-16D",
-  bands      = c("SOIL", "VEG", "WATER"),
+  bands      = c("SOIL", "VEG", "WATER", "SOILO", "VEGO"),
   tiles      = tiles,
   data_dir   = mixture_path,
   start_date = start_date,
