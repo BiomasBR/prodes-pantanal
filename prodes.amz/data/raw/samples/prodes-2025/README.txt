@@ -1,1 +1,0 @@
-This folder is intended for storing Prodes 2025 polygons.
