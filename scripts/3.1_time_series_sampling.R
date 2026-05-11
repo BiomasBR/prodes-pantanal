@@ -65,11 +65,10 @@ read_class_config <- function(config_file = "class_config.txt") {
 }
 
 # File and folder paths
-sample_path   <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/raw/samples"
-ts_path       <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/rds/time_series/"
-mixture_path  <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/raw/mixture_model"
-plots_path    <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/plots/"
-config_dir    <- ".."
+sample_path   <- "data/raw/samples"
+ts_path       <- "data/rds/time_series/"
+mixture_path  <- "mixture_model"
+plots_path    <- "data/plots/"
 
 # Plots organized by var
 plot_dir <- file.path(plots_path, var)
