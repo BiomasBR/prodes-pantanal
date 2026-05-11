@@ -9,11 +9,11 @@ library(dplyr)
 library(ggplot2)
 
 # Define the parameters: These are user-defined variables
-tiles           <- c("012014","012015","013014","013015")
-start_date      <- "2024-08-01"
-end_date        <- "2025-07-31"
-var             <- "all-samples-new-pol-avg-false" #ALWAYS SPACE THE WORDS WITH "-"
-sampling_date   <- "2026-02-24"                    # Date of the sampling file (YYYY-MM-DD)
+tiles           <- c("020023","020024")
+start_date      <- "2022-08-01"
+end_date        <- "2024-07-31"
+var             <- "first-samples-grouped-v3" #ALWAYS SPACE THE WORDS WITH "-"
+sampling_date   <- "2026-05-08"                    # Date of the sampling file (YYYY-MM-DD)
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -65,15 +65,15 @@ read_class_config <- function(config_file = "class_config.txt") {
 }
 
 # File and folder paths
-sample_path   <- "data/raw/samples"
-ts_path       <- "data/rds/time_series/"
-mixture_path  <- "data/raw/mixture_model"
-plots_path    <- "data/plots/"
+sample_path   <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/raw/samples"
+ts_path       <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/rds/time_series/"
+mixture_path  <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/raw/mixture_model"
+plots_path    <- "~/grupos/biomasbr/amazonia/sits-prodes/prodes.pantanal/data/plots/"
 config_dir    <- ".."
 
 # Plots organized by var
-plots_dir <- file.path(plots_path, var)
-dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+plot_dir <- file.path(plots_path, var)
+dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ============================================================
 # 1. Define and Load Data Cubes
@@ -99,7 +99,7 @@ tiles_train <- paste(sort(tiles), collapse = "-")
 mm_cube <- sits_cube(
   source      = "BDC",
   collection  = "SENTINEL-2-16D",
-  bands       = c("SOIL", "VEG", "WATER"),
+  bands       = c("SOIL", "VEG", "WATER", "SOILO", "VEGO"),
   tiles       = tiles,
   data_dir    = mixture_path,
   start_date  = start_date,
@@ -169,7 +169,7 @@ saveRDS(samples,
 save_sits_patterns_plot <- function(samples,
                                     start_date,
                                     end_date,
-                                    plots_dir,
+                                    plot_dir,
                                     tiles,
                                     var,
                                     labels          = NULL,
@@ -258,9 +258,9 @@ save_sits_patterns_plot <- function(samples,
                       suffix,
                       ".png")
   
-  dir.create(plots_dir, showWarnings = FALSE, recursive = TRUE)
+  dir.create(plot_dir, showWarnings = FALSE, recursive = TRUE)
   
-  full_path <- file.path(plots_dir, file_name)
+  full_path <- file.path(plot_dir, file_name)
   ggplot2::ggsave(full_path, plot = g, width = width, height = height,
                   units = "px", dpi = res)
   
@@ -273,11 +273,11 @@ save_sits_patterns_plot(
   samples          = samples,
   start_date       = unique(samples$start_date),
   end_date         = unique(samples$end_date),
-  plots_dir        = plots_dir,
+  plot_dir       = plot_dir,
   tiles            = tiles,
   var              = var,
-  bands            = c('B11','EVI','NDVI'), # NULL to plot and save all bands patterns
-  #labels            = c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
+  bands            = NULL, #c('B12','B11','B04'), # NULL to plot and save all bands patterns
+  labels            = NULL, #c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
   vline_dates      = "08-01",   # vertical doted line on August 1st of each year
   legend_text_size = 10, 
   class_text_size  = 12,
