@@ -34,7 +34,8 @@ made available in this repository.
 # Repository structure
 
 - `data/`: Datasets used and generated throughout the analyses
-- `inst/extdata/`: Supplementary resources required for the workflows
+- `inst/`: Supplementary resources required for the package to run
+- `R/`: Package functions
 - `scripts/`: Processing and experimentation routines
 
 # Main workflows
