@@ -4,15 +4,11 @@ PRODES-Pantanal experiments and pipelines developed using the SITS package
 <img src="./inst/extdata/sticker/biomasbr_logo.jpeg" alt="BiomasBR logo" align="right" height="150" width="150"/>
 
 This repository brings together reproducible experiments and processing pipelines
-from the PRODES Pantanal project. Its purpose
+from the PRODES-Pantanal project, developed using the SITS package. Its purpose
 is to clearly and systematically document the adopted workflows,
 providing references for experimentation, validation, and methodological
 improvements, while supporting reproducibility and the continuous
-evolution of the project's analyses.
-
-The repository includes geospatial processing routines, remote sensing
-experiments, segmentation and classification workflows, and supporting
-resources used throughout the monitoring activities of the Pantanal biome.
+evolution of project's analyses.
 
 # Getting started
 
