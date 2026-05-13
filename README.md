@@ -1,26 +1,71 @@
-# PRODES Pantanal
-<div align="center">
-  <img src="docs/logo.png" alt="PRODES Pantanal" width="220"/>
+PRODES Pantanal experiments and pipelines developed using geospatial workflows
+================
 
-### Experiments and pipelines developed for PRODES Pantanal
+<img src="./inst/extdata/sticker/biomasbr_logo.jpeg" alt="BiomasBR logo" align="right" height="150" width="150"/>
 
-</div>
+This repository brings together reproducible experiments and processing pipelines
+from the PRODES Pantanal project. Its purpose
+is to clearly and systematically document the adopted workflows,
+providing references for experimentation, validation, and methodological
+improvements, while supporting reproducibility and the continuous
+evolution of the project's analyses.
 
----
+The repository includes geospatial processing routines, remote sensing
+experiments, segmentation and classification workflows, and supporting
+resources used throughout the monitoring activities of the Pantanal biome.
 
-## About
+# Getting started
 
-This repository brings together reproducible experiments and geospatial processing pipelines developed for the **PRODES Pantanal** project.
+To use the scripts in this repository, clone the project to
+your local machine using the command below:
 
-Its purpose is to systematically document and organize the workflows adopted throughout the project, supporting reproducibility, experimentation, validation, and continuous methodological improvements related to native vegetation monitoring in the Pantanal biome.
+```sh
+git clone https://github.com/BiomasBR/prodes-pantanal
+```
 
-The repository includes processing routines, auxiliary datasets, and automation scripts used in remote sensing and geospatial analysis workflows.
+After cloning, open the `prodes-pantanal` directory in RStudio and install the
+package using the command:
 
----
+```r
+devtools::install(".")
+```
 
-## Getting started
+# Documentation
 
-To use the scripts in this repository, clone the project to your local machine using the command below:
+Project documentation and methodological references will be progressively
+made available in this repository.
 
-```bash
-git clone https://github.com/BiomasBR/prodes-pantanal.git
+# Repository structure
+
+- `data/`: Datasets used and generated throughout the analyses
+- `inst/extdata/`: Supplementary resources required for the workflows
+- `scripts/`: Processing and experimentation routines
+
+# Main workflows
+
+- Satellite image preprocessing
+- Geospatial data organization
+- Segmentation routines
+- Classification workflows
+- Temporal analysis
+- Environmental monitoring pipelines
+- GIS integration and automation
+
+# Technologies
+
+- R
+- SITS
+- Terra
+- sf
+- GDAL
+- QGIS
+
+# License
+
+The data and results available in this repository are licensed under the
+terms described in the LICENSE file.
+
+# Support
+
+For questions, suggestions, or issues, please use the **Issues** section or
+contact the repository maintainers.
