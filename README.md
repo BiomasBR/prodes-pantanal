@@ -52,10 +52,7 @@ made available in this repository.
 
 - R
 - SITS
-- Terra
-- sf
-- GDAL
-- QGIS
+- BDC
 
 # License
 
