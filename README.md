@@ -1,4 +1,4 @@
-PRODES-Pantanal experiments and pipelines developed using the SITS package
+Prodes-Pantanal experiments and pipelines developed using the SITS package
 ================
 
 <img src="./inst/extdata/sticker/biomasbr_logo.jpeg" alt="BiomasBR logo" align="right" height="150" width="150"/>
