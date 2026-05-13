@@ -4,7 +4,7 @@ Prodes-Pantanal experiments and pipelines developed using the SITS package
 <img src="./inst/extdata/sticker/biomasbr_logo.jpeg" alt="BiomasBR logo" align="right" height="150" width="150"/>
 
 This repository brings together reproducible experiments and processing pipelines
-from the PRODES-Pantanal project, developed using the SITS package. Its purpose
+from the Prodes-Pantanal project, developed using the SITS package. Its purpose
 is to clearly and systematically document the adopted workflows,
 providing references for experimentation, validation, and methodological
 improvements, while supporting reproducibility and the continuous
