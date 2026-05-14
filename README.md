@@ -16,7 +16,7 @@ To use the scripts in this repository, clone the project to
 your local machine using the command below:
 
 ```sh
-git clone https://github.com/BiomasBR/prodes-pantanal
+ git clone https://github.com/BiomasBR/prodes-pantanal.git
 ```
 
 After cloning, open the `prodes-pantanal` directory in RStudio and install the
