@@ -9,7 +9,7 @@ library(stringr)
 library(randomForestExplainer, lib.loc = "/opt/r/R/x86_64-pc-linux-gnu-library/4.4")
 
 # Define the parameters: These are user-defined variables
-time_series_name  <- "TS-tiles_020023-020024_2y_2022-08-01_2024-07-31_first-samples-grouped-v3_2026-05-08_08h08m.rds"
+time_series_name  <- "TS-tiles_020023-020024_2y_2022-08-01_2024-07-31_first-samples-V4_2026-05-22_17h33m.rds"
 
 # Extract the tiles and date of the string separated by "_"
 tiles      <- str_split(str_extract(time_series_name, "(?<=tiles_)[^_]+"), "-")[[1]]
@@ -71,7 +71,7 @@ time_process    <- format(Sys.time(), "%Hh%Mm", tz = "America/Sao_Paulo")
 process_version <- paste0(date_process, time_process)
 
 # File and folder paths
-time_series_path  <- file.path("data/rds/time_series/", time_series_name)
+time_series_path  <- file.path("data/rds/time_series", time_series_name)
 rds_path          <- "data/rds/"
 plots_path        <- "data/plots"
 config_dir        <- ".."

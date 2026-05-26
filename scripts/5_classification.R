@@ -10,8 +10,8 @@ library(terra)
 library(RColorBrewer)
 
 # Define the parameters: These are user-defined variables
-model_name    <- "rf-model_2t_020023-020024_2y_2022-08-01_2024-07-31_second-samples_2026-05-13_14h32m.rds"
-seg_version   <- "lsmm-snic-spac6-comp01-pad0-rectangular-2026-05-11"# SITS recognizes "underline" as a separator of information. Use only for this purpose.
+model_name    <- "rf-model_2t_020023-020024_2y_2022-08-01_2024-07-31_first-samples-V4_2026-05-22_17h54m.rds"
+seg_version   <- "lsmm-snic-spac10-comp03-pad0-rectangular-2026-04-23"# SITS recognizes "underline" as a separator of information. Use only for this purpose.
 tile          <- "020024" # one tile per classification run
 
 # Extract the date of the string separated by "_"
@@ -27,9 +27,9 @@ models <- c("rf"   = "random_forest",
             "lstm" = "ltsm")
 model_type    <- stringr::str_split_i(model_name, "-", 1)
 model_path    <- file.path("data/rds/model", models[model_type], model_name)
-vector_path   <- "~/grupos/biomasbr/pantanal/prodes-pantanal/data/segments"
-class_path    <- "~/grupos/biomasbr/pantanal/prodes-pantanal/data/class"
-mixture_path  <- "~/grupos/biomasbr/pantanal/prodes-pantanal/data/raw/mixture_model"
+vector_path   <- "data/segments"
+class_path    <- "data/class/020024_test2"
+mixture_path  <- "data/raw/mixture_model"
 
 # Identifier to distinguish this model run from previous runs
 var <- stringr::str_split_i(model_name, "_", 7)
@@ -95,11 +95,11 @@ sits_classify_start <- Sys.time()
 class_prob <- sits_classify(
   data        = local_segs_cube,
   ml_model    = model,
-  multicores  = 28,  # adapt to your computer CPU core availability
-  memsize     = 130, # adapt to your computer memory availability
+  multicores  = 24,  # adapt to your computer CPU core availability
+  memsize     = 180, # adapt to your computer memory availability
   output_dir  = tile_period_dir,
   version     = version,
-  n_sam_pol   = 12, #  Number of time series per segment to be classified (integer, min = 10, max = 50)
+  n_sam_pol   = 16, #  Number of time series per segment to be classified (integer, min = 10, max = 50)
   verbose     = TRUE,
   progress    = TRUE
 )
@@ -125,10 +125,11 @@ class_map <- sits_label_classification(
   cube        = class_prob,
   output_dir  = tile_period_dir,
   version     = version,
-  multicores  = 28,  # adapt to your computer CPU core availability
+  multicores  = 24,  # adapt to your computer CPU core availability
   memsize     = 180, # adapt to your computer memory availability
   progress    = TRUE
 )
+
 print("Classification finished!")
 
 # ============================================================
@@ -140,7 +141,7 @@ compute_uncertainty_raster <- function(
     vector_cube,
     tile_period_dir,
     version,
-    multicores = 28,
+    multicores = 24,
     memsize    = 180,
     delete_gpkg = TRUE
 ) {
@@ -218,7 +219,7 @@ compute_uncertainty_raster(
   vector_cube     = vector_cube,
   tile_period_dir = class_path,
   version         = version,
-  multicores      = 28, # adapt to your computer CPU core availability
-  memsize         = 130, # adapt to your computer CPU core availability
+  multicores      = 24, # adapt to your computer CPU core availability
+  memsize         = 180, # adapt to your computer CPU core availability
   delete_gpkg     = TRUE  # Keep the .gpkg file if you want to inspect it beforehand
 )

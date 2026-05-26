@@ -12,8 +12,8 @@ library(ggplot2)
 tiles           <- c("020023","020024")
 start_date      <- "2022-08-01"
 end_date        <- "2024-07-31"
-var             <- "first-samples-grouped-v3" #ALWAYS SPACE THE WORDS WITH "-"
-sampling_date   <- "2026-05-08"                    # Date of the sampling file (YYYY-MM-DD)
+var             <- "first-samples-V4" #ALWAYS SPACE THE WORDS WITH "-"
+sampling_date   <- "2026-05-22"                    # Date of the sampling file (YYYY-MM-DD)
 
 # Function to read class names and their colors::IMPORTANT
 read_class_config <- function(config_file = "class_config.txt") {
@@ -66,9 +66,9 @@ read_class_config <- function(config_file = "class_config.txt") {
 
 # File and folder paths
 sample_path   <- "data/raw/samples"
-ts_path       <- "data/rds/time_series/"
-mixture_path  <- "mixture_model"
-plots_path    <- "data/plots/"
+ts_path       <- "data/rds/time_series"
+mixture_path  <- "data/raw/mixture_model"
+plots_path    <- "data/plots"
 
 # Plots organized by var
 plot_dir <- file.path(plots_path, var)
@@ -275,11 +275,11 @@ save_sits_patterns_plot(
   plot_dir       = plot_dir,
   tiles            = tiles,
   var              = var,
-  bands            = NULL, #c('B12','B11','B04'), # NULL to plot and save all bands patterns
+  bands            = c('B08','B11','NDVI'), # NULL to plot and save all bands patterns
   labels            = NULL, #c('DESMAT_ARVORE_REMANESCE'), # NULL to plot and save all classes patterns
   vline_dates      = "08-01",   # vertical doted line on August 1st of each year
   legend_text_size = 10, 
   class_text_size  = 12,
-  line_width       = 1.5, # line width of each spectral band
+  line_width       = 0.5, # line width of each spectral band
   vline_width      = 0.6  # vertical line width
 )
