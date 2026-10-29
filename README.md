@@ -1,7 +1,7 @@
 Prodes-Pantanal experiments and pipelines developed using the SITS package
 ================
 
-<img src="./inst/extdata/sticker/biomasbr_logo.jpeg" alt="BiomasBR logo" align="right" height="150" width="150"/>
+<img src="./inst/extdata/sticker/logo-biomas-br.png" alt="BiomasBR logo" align="right" height="150" width="150"/>
 
 This repository brings together reproducible experiments and processing pipelines
 from the Prodes-Pantanal project, developed using the SITS package. Its purpose
